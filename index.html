@@ -38,6 +38,7 @@
 (function () {
   var msg = document.getElementById('msg'), barra = document.getElementById('barra'), otra = document.getElementById('otra');
   var t = (location.hash.match(/t=([A-Za-z0-9_-]{8,64})/) || [])[1];
+  var d = (location.hash.match(/[#&]d=([A-Za-z0-9_-]{16,64})/) || [])[1];   // QR para bajar un vídeo al móvil
   try { if (t) localStorage.setItem('bv_tema', t); else t = localStorage.getItem('bv_tema'); } catch (e) { /* sin almacenamiento */ }
   function fallo(texto) { msg.textContent = texto; barra.classList.add('oculto'); otra.classList.remove('oculto'); }
   if (!t) { fallo('Este enlace está incompleto. Ábrelo desde el código QR de «Usar en el móvil» en tu ordenador.'); return; }
@@ -55,6 +56,7 @@
         } catch (e) { /* línea rara */ }
       });
       if (!url) { fallo(apagado ? 'El acceso del móvil está apagado en tu ordenador. Actívalo en «Usar en el móvil».' : 'Tu ordenador no está disponible. Enciéndelo y abre BiouVision.'); return; }
+      if (d) { msg.textContent = 'Descargando tu vídeo… (si no empieza, toca «Volver a intentar»)'; barra.classList.add('oculto'); otra.classList.remove('oculto'); location.href = url.replace(/\/$/, '') + '/d/' + d; return; }
       msg.textContent = 'Entrando…';
       location.replace(url.replace(/\/$/, '') + '/');
     }).catch(function () { fallo('Sin conexión. Mira que tengas datos o wifi.'); });
