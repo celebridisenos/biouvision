@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BiouVision</title>
+<meta name="theme-color" content="#141416">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BiouVision">
+<meta name="robots" content="noindex">
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #141416; color: #E4E4E8; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  main { min-height: 100%; display: grid; place-items: center; padding: 24px 16px; box-sizing: border-box; text-align: center; }
+  .logo { font-size: 44px; font-weight: 850; letter-spacing: -.02em; }
+  .logo em { font-style: normal; color: #FF6A2B; }
+  p { color: #9A9AA3; max-width: 340px; margin: 14px auto 0; line-height: 1.5; }
+  .barra { width: 180px; height: 2px; background: #2A2A30; border-radius: 2px; overflow: hidden; margin: 22px auto 0; }
+  .barra i { display: block; height: 100%; width: 40%; background: #FF6A2B; animation: c 1.1s ease-in-out infinite; }
+  @keyframes c { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+  button { margin-top: 22px; height: 46px; padding: 0 24px; border-radius: 8px; border: 0; background: #FF6A2B; color: #1A0B03; font: inherit; font-weight: 700; font-size: 15px; }
+  .oculto { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <div class="logo">Biou<em>Vision</em></div>
+    <p id="msg">Buscando tu ordenador…</p>
+    <div class="barra" id="barra"><i></i></div>
+    <button id="otra" class="oculto" type="button">Volver a intentar</button>
+  </div>
+</main>
+<script>
+// Este enlace siempre es el mismo. El ordenador de Biou deja en un buzón secreto (ntfy) la dirección de hoy de su BiouVision;
+// esta página la busca y te lleva. El nombre del buzón va detrás de «#», así que no se envía a ningún servidor (ni a GitHub).
+(function () {
+  var msg = document.getElementById('msg'), barra = document.getElementById('barra'), otra = document.getElementById('otra');
+  var t = (location.hash.match(/t=([A-Za-z0-9_-]{8,64})/) || [])[1];
+  try { if (t) localStorage.setItem('bv_tema', t); else t = localStorage.getItem('bv_tema'); } catch (e) { /* sin almacenamiento */ }
+  function fallo(texto) { msg.textContent = texto; barra.classList.add('oculto'); otra.classList.remove('oculto'); }
+  if (!t) { fallo('Este enlace está incompleto. Ábrelo desde el código QR de «Usar en el móvil» en tu ordenador.'); return; }
+  function buscar() {
+    msg.textContent = 'Buscando tu ordenador…'; barra.classList.remove('oculto'); otra.classList.add('oculto');
+    fetch('https://ntfy.sh/' + t + '/json?poll=1&since=12h', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (txt) {
+      var url = null, apagado = false;
+      txt.split('\n').forEach(function (l) {
+        if (!l.trim()) return;
+        try {
+          var m = JSON.parse(l);
+          if (m.event !== 'message') return;
+          if (/^https:\/\/[a-z0-9-]+\.trycloudflare\.com\/?$/.test(m.message || '')) { url = m.message; apagado = false; }
+          else if (m.message === 'apagado') { url = null; apagado = true; }
+        } catch (e) { /* línea rara */ }
+      });
+      if (!url) { fallo(apagado ? 'El acceso del móvil está apagado en tu ordenador. Actívalo en «Usar en el móvil».' : 'Tu ordenador no está disponible. Enciéndelo y abre BiouVision.'); return; }
+      msg.textContent = 'Entrando…';
+      location.replace(url.replace(/\/$/, '') + '/');
+    }).catch(function () { fallo('Sin conexión. Mira que tengas datos o wifi.'); });
+  }
+  otra.onclick = buscar;
+  buscar();
+})();
+</script>
+</body>
+</html>
